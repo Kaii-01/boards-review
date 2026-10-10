@@ -474,7 +474,6 @@ var STARTERS={
   MATH:['Algebra','Plane and Solid Geometry','Trigonometry','Analytic Geometry','Differential Calculus','Integral Calculus','Differential Equations','Engineering Data Analysis']
 };
 var CAT_HINT={EE:'e.g. Distribution systems',ESAS:'e.g. Materials science',MATH:'e.g. Complex numbers'};
-function isAdmin(){return S.isOwner||S.access==='member'}
 var S={db:null,user:null,sample:null,imgOk:false,uid:null,myName:'',canWrite:null,isOwner:false,
   access:'loading',roster:{},blocked:{},requests:{},myReq:null,selfRoster:null,selfBlocked:null,
   flags:{sr:false,sb:false,rq:false},dataOn:false,unsubs:[],dunsubs:[],decksReady:false,settings:{},ownerWriting:false,
@@ -719,7 +718,7 @@ function removeDeck(id){
 var TABS=[['home','Home','home'],['decks','Decks','layers'],['plan','Calendar','cal2'],['subjects','Subjects','tasks'],['ranks','Ranks','trophy'],['games','Games','play'],['insights','Insights','target'],['chat','Chat','chat']];
 function tabsFor(){
   var t=TABS.slice();
-  if(isAdmin()&&S.db)t.push(['members','Members','shield']);
+  if(S.isOwner&&S.db)t.push(['members','Members','shield']);
   return t;
 }
 function activeTab(){
@@ -845,7 +844,7 @@ function miniBoard(){
 }
 function joinBlock(){
   if(S.access==='blocked')return h('div',{id:'join',class:'card joincard stack'},h('h2',{class:'h2'},'You are not in this club'),h('p',{class:'muted',style:'margin:0'},'The owner removed your access. Message them if you think that was a mistake.'));
-  if(S.access==='pending')return h('div',{id:'join',class:'card joincard stack'},h('span',{class:'pill lime'},'Request sent'),h('h2',{class:'h2'},'Waiting at the door'),h('p',{class:'muted',style:'margin:0'},'Someone in the club has to let you in. This page opens up by itself once they do, so you can leave it open.'));
+  if(S.access==='pending')return h('div',{id:'join',class:'card joincard stack'},h('span',{class:'pill lime'},'Request sent'),h('h2',{class:'h2'},'Waiting at the door'),h('p',{class:'muted',style:'margin:0'},'The owner has to let you in. This page opens up by itself once they do, so you can leave it open.'));
   var can=S.canWrite!==false&&S.uid;
   if(!can)return h('div',{id:'join',class:'card joincard stack'},h('h2',{class:'h2'},'This club is invite-only'),h('p',{class:'muted',style:'margin:0'},S.uid?'Your access only lets you view. Ask the owner to give you Contributor access, then reload this page.':'Sign in to ask for an invite.'));
   return h('div',{id:'join',class:'card joincard stack'},
@@ -887,7 +886,7 @@ function viewSettings(){
       return h('button',{type:'button','aria-pressed':String(PREFS.size===z[0]),onclick:function(){PREFS.size=z[0];savePrefs();render()}},z[1]);
     }))),
     h('label',{class:'row',style:'font-size:15px'},h('input',{type:'checkbox',id:'pconf',checked:PREFS.confetti?true:null,onchange:function(ev){PREFS.confetti=ev.target.checked;savePrefs();if(PREFS.confetti)confetti()}}),'Confetti when I do well')));
-  if(isAdmin()&&S.db)out.push(clubSettingsCard());
+  if(S.isOwner&&S.db)out.push(clubSettingsCard());
   out.push(h('div',{class:'card stack'},h('h2',{class:'h2'},'Use it like an app on your phone'),
     h('p',{class:'muted',style:'margin:0'},'This is a web app, so there is nothing to download from a store. Add it to your home screen and it opens full screen like an app.'),
     h('ol',{style:'margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;line-height:1.45'},
@@ -898,7 +897,7 @@ function viewSettings(){
     h('div',{class:'muted',style:'font-size:13px'},'You need to be online and signed in to sync scores, chat and quiz battles.')));
   out.push(h('div',{class:'card stack'},h('h2',{class:'h2'},'About'),
     h('p',{class:'muted',style:'margin:0'},'Operation REE 2027 is a private study club. Your decks, scores, plans and chat are visible to everyone the owner lets in.'),
-    isAdmin()?h('p',{class:'muted',style:'margin:0'},S.isOwner?'You are the owner and an admin. Invites and removals are on the Members tab.':'Everyone in the club is an admin. Invites and removals are on the Members tab.'):null));
+    S.isOwner?h('p',{class:'muted',style:'margin:0'},'You are the owner. Invites and removals are on the Members tab.'):null));
   return out;
 }
 
@@ -1231,7 +1230,7 @@ function playArea(g){
   return out;
 }
 function viewGame(g){
-  var host=g.host===S.uid||isAdmin();
+  var host=g.host===S.uid||S.isOwner;
   var out=[h('div',{class:'pagehead'},h('div',null,h('span',{class:'eyebrow'},'Quiz battle · '+g.status),h('h1',{style:'font-size:clamp(30px,5vw,48px)'},g.title),
       h('div',{class:'hub-meta'},'Hosted by ',avatar(g.host,24),nm(g.host),' · '+g.qs.length+' questions')),
     h('div',{class:'row'},h('button',{class:'btn',type:'button',onclick:closeGame},'All games'),
@@ -1321,7 +1320,7 @@ function chatNodes(){
     var mine=m.by===S.uid;
     if(!prev||dayLabel(prev.at)!==dayLabel(m.at))out.push(h('div',{class:'day'},dayLabel(m.at)));
     var first=!prev||prev.by!==m.by||m.at-prev.at>300000||dayLabel(prev.at)!==dayLabel(m.at);
-    var canDel=mine||isAdmin(),conf=S.confirmMsg===m.id;
+    var canDel=mine||S.isOwner,conf=S.confirmMsg===m.id;
     var col=h('div',{class:'col'},
       first?h('div',{class:'who'},h('b',null,mine?(myName()||'You')+' (you)':nm(m.by)),msgTime(m.at)):null,
       chatBubble(m));
@@ -1414,18 +1413,18 @@ function viewMembers(){
   var reqs=Object.keys(S.requests).map(function(id){var r=S.requests[id];return{id:id,name:r.name||'',note:r.note||'',at:r.at||0}}).sort(function(a,b){return a.at-b.at});
   var ids=memberIds(),blk=Object.keys(S.blocked);
   Object.keys(S.roster).forEach(function(k){if(S.roster[k].status==='blocked'&&blk.indexOf(k)<0)blk.push(k)});
-  var out=[h('div',{class:'pagehead'},h('div',null,h('span',{class:'eyebrow'},'Admin controls'),h('h1',null,'Who’s in the club')),
+  var out=[h('div',{class:'pagehead'},h('div',null,h('span',{class:'eyebrow'},'Owner controls'),h('h1',null,'Who’s in the club')),
     h('span',{class:'btn cream',style:'pointer-events:none'},ic('lock',16),'Club is invite-only'))];
   out.push(h('div',{class:'card stack'},h('h2',{class:'h2'},'Invite and admin link'),
     linkRow('Join link for members (and your admin link)'),
-    h('div',{class:'muted',style:'font-size:14px'},'This one link is the site. Friends open it to ask to join. Everyone in the club is an admin, so every member sees this Members tab on the same link. There is no separate admin address. The link only opens for people added in Share.'),
+    h('div',{class:'muted',style:'font-size:14px'},'This one link is the site. Friends open it to ask to join. You open the same link, and because you are the owner you also get the Members tab here. There is no separate admin address. The link only opens for people you add in Share.'),
     h('h3',{style:'margin:6px 0 0;font-size:17px'},'How to invite friends'),
     h('ol',{style:'margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;line-height:1.45'},
       h('li',null,h('b',null,'Share the page. '),'Use the Share button in Claude, in the bar around this page (not inside the page). Add each friend’s email as a Contributor.'),
       h('li',null,h('b',null,'Send them the link. '),'It only opens for the people you added.'),
       h('li',null,h('b',null,'Approve them here. '),'When they ask to join, they show up under “Waiting at the door”.'),
       h('li',null,h('b',null,'Removing someone. '),'Kick them here, and also remove them in Share so their access is fully closed.')),
-    h('div',{class:'muted',style:'font-size:13px'},'Every member is an admin: anyone in the club can let people in or remove them. The owner can never be removed.')));
+    h('div',{class:'muted',style:'font-size:13px'},'Only you see this Members page. Friends never get the owner controls.')));
   var waiting=h('div',{class:'card stack'},
     h('div',{class:'row between'},h('h2',{class:'h2'},'Waiting at the door'),reqs.length?h('span',{class:'badgect'},String(reqs.length)):null),
     reqs.length?reqs.map(function(r){
@@ -1467,7 +1466,7 @@ function viewMembers(){
   return out;
 }
 function saveSettings(patch){
-  var next=Object.assign({},S.settings,patch,{ownerId:S.settings.ownerId||S.uid});
+  var next=Object.assign({},S.settings,patch,{ownerId:S.uid});
   S.settings=next;
   S.db.doc('club/settings').set(next).then(function(){toast('Saved.');render()}).catch(writeFailed);
 }
@@ -1539,7 +1538,7 @@ function viewHome(){
   var m=metrics(S.uid),rows=rankRows('right'),pos=rows.findIndex(function(r){return r.id===S.uid})+1;
   var dte=daysToExam(),exam=null;
   if(dte!==null)exam=h('div',{class:'exam-card'},ic('cal',28,'var(--coral)'),h('div',null,h('div',{class:'n'},dte>0?String(dte):dte===0?'Today':'Done'),h('div',{class:'l'},dte>0?(dte===1?'day to board exam':'days to board exam'):dte===0?'Exam day. You got this.':'Exam date has passed')));
-  else if(isAdmin())exam=h('button',{class:'exam-card',type:'button',style:'cursor:pointer;color:inherit',onclick:function(){go('members')}},ic('cal',28,'var(--coral)'),h('div',null,h('div',{class:'l'},'No exam date yet'),h('b',null,'Set it for the squad')));
+  else if(S.isOwner)exam=h('button',{class:'exam-card',type:'button',style:'cursor:pointer;color:inherit',onclick:function(){go('members')}},ic('cal',28,'var(--coral)'),h('div',null,h('div',{class:'l'},'No exam date yet'),h('b',null,'Set it for the squad')));
   out.push(h('div',{class:'pagehead'},h('div',null,h('span',{class:'eyebrow'},'Rank #'+(pos||1)+' of '+rows.length),
     h('h1',null,'Welcome back ',h('span',{style:'font-size:.85em'},avOf(S.uid)))),exam));
   out.push(h('div',{class:'tiles'},
@@ -1656,7 +1655,7 @@ function viewDecks(){
   return out;
 }
 function deckCard(d){
-  var n=(d.cards||[]).length,best=deckBest(d.id),mine=d.owner===S.uid,can=(mine||isAdmin())&&canMake(),confirming=S.confirmDel===d.id;
+  var n=(d.cards||[]).length,best=deckBest(d.id),mine=d.owner===S.uid,can=(mine||S.isOwner)&&canMake(),confirming=S.confirmDel===d.id;
   var plays=deckPlays(d.id);
   return h('div',{class:'card dk'},
     h('div',{class:'dk-top'},
@@ -2488,7 +2487,7 @@ function removeSubject(sj){
   S.confirmSub=null;render();
 }
 function subjectRow(sj,mine,ids){
-  var done=!!mine[sj.id],who=ids.filter(function(id){return doneMap(id)[sj.id]}),canDel=(sj.by===S.uid||isAdmin())&&canMake(),sure=S.confirmSub===sj.id;
+  var done=!!mine[sj.id],who=ids.filter(function(id){return doneMap(id)[sj.id]}),canDel=(sj.by===S.uid||S.isOwner)&&canMake(),sure=S.confirmSub===sj.id;
   return h('div',{class:'sj'+(done?' done':'')},
     h('button',{class:'tick',type:'button','aria-pressed':String(done),'aria-label':(done?'Uncheck ':'Check off ')+sj.name,disabled:canMake()?null:true,onclick:function(){toggleSubject(sj.id)}},ic('check',16)),
     h('div',null,h('div',{class:'nm'},sj.name),h('div',{class:'sub'},done?'You finished '+ago(mine[sj.id]):'Not done yet')),
@@ -2661,7 +2660,7 @@ function startData(){
   D.push(db.collection('checks').onSnapshot(function(snap){
     var ck2={};snap.docs.forEach(function(d){ck2[d.id]=d.data()||{}});S.checks=ck2;refresh();
   },function(){}));
-  if(isAdmin()){
+  if(S.isOwner){
     D.push(db.collection('requests').onSnapshot(function(snap){
       var rq={};snap.docs.forEach(function(d){rq[d.id]=d.data()||{}});
       S.requests=rq;refresh();
