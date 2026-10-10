@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14120e"><title>REE 2027 offline decks</title>
+<style>
+:root{--bg:#14120e;--s:#211e17;--s2:#2a261d;--ink:#f3efe4;--mut:#a39d8c;--line:#3a3529;--lime:#c8f135;--limeink:#172000;--cream:#f2ede3;--creamink:#1b1812;--coral:#ff6b4a;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:max(16px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+main{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:28px;margin:0;letter-spacing:-.02em}h2{font-size:20px;margin:0}
+.mut{color:var(--mut);font-size:14px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}
+button{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--s);color:var(--ink);border-radius:14px;padding:11px 16px;cursor:pointer}
+button.p{background:var(--lime);color:var(--limeink);border-color:transparent}button.on{background:var(--lime);color:var(--limeink);border-color:transparent}button:disabled{opacity:.4}
+.card{background:var(--s);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.dk{cursor:pointer;text-align:left}.pill{font:700 11px ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);background:var(--s2);border-radius:99px;padding:3px 10px;color:var(--mut)}
+.fc{background:var(--cream);color:var(--creamink);border-radius:26px;min-height:300px;padding:24px;display:flex;flex-direction:column;justify-content:space-between;text-align:center;cursor:pointer}
+.fc.back{background:var(--lime);color:var(--limeink)}.fc .lab{font:700 12px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;opacity:.65;text-align:left}
+.fc .t{font-size:clamp(22px,5vw,34px);font-weight:800;line-height:1.15;margin:auto;overflow-wrap:anywhere;white-space:pre-wrap}.fc .sol{font-size:15px;font-weight:500;opacity:.8;white-space:pre-wrap;text-align:left;border-top:1px solid rgba(0,0,0,.2);padding-top:10px}
+.clock{font:800 28px ui-monospace,monospace;font-variant-numeric:tabular-nums}.opt{text-align:left;width:100%}.opt.right{background:#274d1a;border-color:#6fbf3a}.opt.wrong{background:#5a2218;border-color:var(--coral)}
+.bar{height:8px;background:var(--s2);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--lime)}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+</style></head><body><main id="app"></main>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+var D=JSON.parse(document.getElementById('data').textContent),app=document.getElementById('app');
+var KIND={terms:'Terms',formulas:'Formulas',problems:'Problems'},LOGK='reeOfflineLog';
+function h(t,a,k){var e=document.createElement(t);a=a||{};for(var x in a){if(x==='class')e.className=a[x];else if(x.slice(0,2)==='on')e.addEventListener(x.slice(2),a[x]);else if(a[x]!==null&&a[x]!==false)e.setAttribute(x,a[x])}(Array.isArray(k)?k:[k]).forEach(function f(c){if(Array.isArray(c))c.forEach(f);else if(c!=null)e.append(c.nodeType?c:document.createTextNode(String(c)))});return e}
+function clock(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+('0'+s%60).slice(-2)}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function norm(s){return String(s).toLowerCase().replace(/\s+/g,' ').trim()}
+function log(){try{return JSON.parse(localStorage.getItem(LOGK)||'[]')}catch(e){return []}}
+function addLog(s){try{var l=log();l.push(s);localStorage.setItem(LOGK,JSON.stringify(l.slice(-300)))}catch(e){}}
+var tm=null;function stop(){if(tm){clearInterval(tm);tm=null}}
+function show(n){stop();var f=[];(function add(x){if(Array.isArray(x))x.forEach(add);else if(x)f.push(x)})(n);app.replaceChildren.apply(app,f);try{window.scrollTo(0,0)}catch(e){}}
+function home(){
+  var q=location.hash;var items=D.decks.map(function(d){return h('button',{class:'card dk',onclick:function(){deck(d,'cards')}},[h('div',{class:'row between'},[h('b',null,d.title),h('span',{class:'pill'},(KIND[d.kind]||'Terms')+' · '+d.cat)]),h('span',{class:'mut'},d.cards.length+' cards')])});
+  show([h('div',null,[h('h1',null,'Operation REE 2027'),h('div',{class:'mut'},'Offline decks · saved '+new Date(D.generated).toLocaleDateString()+' · works without internet. Progress here stays on this device.')]),
+    h('div',{class:'row'},[h('button',{onclick:insights},'My offline stats')]),items,
+    D.decks.length?null:h('div',{class:'card'},'No decks in this file.')]);
+}
+function tabs(d,cur){return h('div',{class:'row'},[['cards',d.kind==='problems'?'Solve':'Flashcards'],['quiz','Quiz'],['list','All cards']].map(function(t){return h('button',{class:cur===t[0]?'on':'',onclick:function(){deck(d,t[0])}},t[1])}))}
+function head(d,cur){return [h('button',{onclick:home},'← All decks'),h('div',null,[h('span',{class:'pill'},(KIND[d.kind]||'Terms')+' · '+d.cat),h('h1',null,d.title)]),tabs(d,cur)]}
+function deck(d,tab){
+  if(tab==='list')return show(head(d,tab).concat([h('div',{class:'card'},d.cards.map(function(c){return h('div',null,[h('b',null,c.q),h('div',{class:'mut'},c.a)])}))]));
+  if(tab==='quiz')return quiz(d);
+  cards(d);
+}
+function finish(d,kind,right,total,secs,ts,mode){addLog({t:Date.now(),deck:d.id,title:d.title,kind:d.kind,mode:mode,right:right,total:total,secs:secs,ts:ts||[]})}
+function cards(d){
+  var list=shuffle(d.cards),i=0,right=0,ts=[],flip=false,t0=Date.now(),frozen=0,start=Date.now(),prob=d.kind==='problems';
+  function draw(){
+    if(i>=list.length){finish(d,d.kind,right,list.length,prob?ts.reduce(function(a,b){return a+b},0):Math.round((Date.now()-start)/1000),ts,prob?'solve':'flash');
+      var avg=ts.length?Math.round(ts.reduce(function(a,b){return a+b},0)/ts.length):0;
+      return show(head(d,'cards').concat([h('div',{class:'card'},[h('h2',null,right+' of '+list.length+' marked as got it'),prob?h('div',null,'Average '+clock(avg)+' per problem · fastest '+clock(Math.min.apply(null,ts))+' · slowest '+clock(Math.max.apply(null,ts))):h('div',{class:'mut'},'Finished in '+clock((Date.now()-start)/1000)),h('div',{class:'row'},[h('button',{class:'p',onclick:function(){cards(d)}},'Go again'),h('button',{onclick:home},'All decks')])])]));
+    }
+    var c=list[i],el=h('span',{class:'clock',id:'ck'},'0:00');
+    var face=h('div',{class:'fc'+(flip?' back':''),onclick:function(){if(!flip&&prob)frozen=Math.round((Date.now()-t0)/1000);flip=!flip;draw()}},[h('div',{class:'lab'},flip?'Answer':(prob?'Problem':(d.kind==='formulas'?'Name':'Term'))+' · '+(i+1)+'/'+list.length),h('div',{class:'t'},flip?c.a:c.q),flip&&c.s?h('div',{class:'sol'},c.s):null,h('div',{class:'mut'},flip?'Did you get it?':'Tap to flip')]);
+    show(head(d,'cards').concat([h('div',{class:'row between'},[h('div',{class:'bar',style:'flex:1'},h('i',{style:'width:'+Math.round(100*i/list.length)+'%'})),prob?el:null]),face,
+      h('div',{class:'row',style:'justify-content:center'},[h('button',{disabled:!flip,onclick:function(){next(false)}},'Review again'),h('button',{class:'p',disabled:!flip,onclick:function(){next(true)}},'Got it')])]));
+    if(prob){if(flip)el.textContent=clock(frozen);else tm=setInterval(function(){var e=document.getElementById('ck');if(e)e.textContent=clock((Date.now()-t0)/1000)},250)}
+  }
+  function next(ok){if(ok)right++;if(prob)ts.push(frozen||Math.round((Date.now()-t0)/1000));i++;flip=false;frozen=0;t0=Date.now();draw()}
+  draw();
+}
+function quiz(d){
+  if(d.cards.length<2)return show(head(d,'quiz').concat([h('div',{class:'card'},'Add at least 2 cards to quiz.')]));
+  var list=shuffle(d.cards),i=0,right=0,start=Date.now(),ts=[],t0=Date.now(),picked=null;
+  function draw(){
+    if(i>=list.length){finish(d,d.kind,right,list.length,Math.round((Date.now()-start)/1000),ts,'quiz');return show(head(d,'quiz').concat([h('div',{class:'card'},[h('h2',null,right+' / '+list.length+' correct'),h('div',{class:'mut'},'Finished in '+clock((Date.now()-start)/1000)),h('div',{class:'row'},[h('button',{class:'p',onclick:function(){quiz(d)}},'Again'),h('button',{onclick:home},'All decks')])])]))}
+    var c=list[i],seen={},opts=[c.a];seen[norm(c.a)]=1;shuffle(d.cards).forEach(function(x){if(opts.length<4&&!seen[norm(x.a)]){seen[norm(x.a)]=1;opts.push(x.a)}});opts=shuffle(opts);
+    show(head(d,'quiz').concat([h('div',{class:'card'},[h('div',{class:'mut'},'Question '+(i+1)+' of '+list.length),h('h2',null,c.q),opts.map(function(o){var cls='opt';if(picked!==null){if(o===c.a)cls+=' right';else if(o===picked)cls+=' wrong'}return h('button',{class:cls,disabled:picked!==null,onclick:function(){picked=o;if(o===c.a)right++;ts.push(Math.round((Date.now()-t0)/1000));draw()}},o)}),picked!==null?h('button',{class:'p',onclick:function(){picked=null;i++;t0=Date.now();draw()}},i+1>=list.length?'See results':'Next'):null])]));
+  }
+  draw();
+}
+function insights(){
+  var L=log(),by={};L.forEach(function(s){var k=s.kind||'terms';var b=by[k]||(by[k]={n:0,cards:0,right:0,secs:0});b.n++;b.cards+=s.total;b.right+=s.right;b.secs+=s.secs||0});
+  show([h('button',{onclick:home},'← All decks'),h('h1',null,'My offline stats'),h('div',{class:'mut'},'Saved on this device only. Open the website later to keep your progress online.'),
+    h('div',{class:'card'},L.length?h('table',null,[h('tr',null,['Type','Sessions','Accuracy','Avg / card'].map(function(x){return h('th',null,x)}))].concat(Object.keys(by).map(function(k){var b=by[k];return h('tr',null,[KIND[k]||k,b.n,(b.cards?Math.round(100*b.right/b.cards):0)+'%',b.cards?clock(b.secs/b.cards):'-'].map(function(x){return h('td',null,x)}))}))):'Nothing yet. Study a deck first.')]);
+}
+home();
+})();
+</script></body></html>
