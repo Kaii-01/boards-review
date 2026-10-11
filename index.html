@@ -1,4 +1,4 @@
-<title>Operation REE 2027</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#14110d"><meta name="apple-mobile-web-app-capable" content="yes"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon.svg"><style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0}body{background:#17140f}</style></head><body><title>Operation REE 2027</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -433,6 +433,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 <main id="app"></main>
 <div id="toast" class="toast" hidden></div>
 
+<script src="config.js"></script><script src="claude-shim.js"></script>
 <script>
 (function(){
 'use strict';
@@ -887,6 +888,7 @@ function viewSettings(){
     }))),
     h('label',{class:'row',style:'font-size:15px'},h('input',{type:'checkbox',id:'pconf',checked:PREFS.confetti?true:null,onchange:function(ev){PREFS.confetti=ev.target.checked;savePrefs();if(PREFS.confetti)confetti()}}),'Confetti when I do well')));
   if(S.isOwner&&S.db)out.push(clubSettingsCard());
+  if(window.__reeAuth)out.push(h('div',{class:'card stack'},h('h2',{class:'h2'},'Account'),h('p',{class:'muted',style:'margin:0'},'Signed in as '+window.__reeAuth.email),h('div',null,h('button',{class:'btn',type:'button',onclick:function(){window.__reeAuth.signOut()}},'Sign out'))));
   out.push(h('div',{class:'card stack'},h('h2',{class:'h2'},'Use it like an app on your phone'),
     h('p',{class:'muted',style:'margin:0'},'This is a web app, so there is nothing to download from a store. Add it to your home screen and it opens full screen like an app.'),
     h('ol',{style:'margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;line-height:1.45'},
@@ -1397,7 +1399,8 @@ function viewChat(){
 }
 
 /* ---------- members (owner) ---------- */
-var INVITE_URL='https://claude.ai/artifact/X9oWXSX2WbouEmAbkFpba3';
+var WEB=!!window.__reeWeb;
+var INVITE_URL=WEB?(location.origin+location.pathname):'https://claude.ai/artifact/X9oWXSX2WbouEmAbkFpba3';
 function copyText(t,inp){
   var done=function(){toast('Link copied.')};
   try{
@@ -1417,13 +1420,13 @@ function viewMembers(){
     h('span',{class:'btn cream',style:'pointer-events:none'},ic('lock',16),'Club is invite-only'))];
   out.push(h('div',{class:'card stack'},h('h2',{class:'h2'},'Invite and admin link'),
     linkRow('Join link for members (and your admin link)'),
-    h('div',{class:'muted',style:'font-size:14px'},'This one link is the site. Friends open it to ask to join. You open the same link, and because you are the owner you also get the Members tab here. There is no separate admin address. The link only opens for people you add in Share.'),
+    h('div',{class:'muted',style:'font-size:14px'},'This one link is the site. Friends open it to ask to join. You open the same link, and because you are the owner you also get the Members tab here. There is no separate admin address. '+(WEB?'Anyone can make an account, but nobody sees any club data until you let them in.':'The link only opens for people you add in Share.')),
     h('h3',{style:'margin:6px 0 0;font-size:17px'},'How to invite friends'),
     h('ol',{style:'margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;line-height:1.45'},
-      h('li',null,h('b',null,'Share the page. '),'Use the Share button in Claude, in the bar around this page (not inside the page). Add each friend’s email as a Contributor.'),
-      h('li',null,h('b',null,'Send them the link. '),'It only opens for the people you added.'),
+      WEB?h('li',null,h('b',null,'Send them the link. '),'They create an account with their email on that page.'):h('li',null,h('b',null,'Share the page. '),'Use the Share button in Claude, in the bar around this page (not inside the page). Add each friend’s email as a Contributor.'),
+      WEB?null:h('li',null,h('b',null,'Send them the link. '),'It only opens for the people you added.'),
       h('li',null,h('b',null,'Approve them here. '),'When they ask to join, they show up under “Waiting at the door”.'),
-      h('li',null,h('b',null,'Removing someone. '),'Kick them here, and also remove them in Share so their access is fully closed.')),
+      h('li',null,h('b',null,'Removing someone. '),WEB?'Press Remove here. Their access to all club data closes right away.':'Kick them here, and also remove them in Share so their access is fully closed.')),
     h('div',{class:'muted',style:'font-size:13px'},'Only you see this Members page. Friends never get the owner controls.')));
   var waiting=h('div',{class:'card stack'},
     h('div',{class:'row between'},h('h2',{class:'h2'},'Waiting at the door'),reqs.length?h('span',{class:'badgect'},String(reqs.length)):null),
@@ -1459,10 +1462,10 @@ function viewMembers(){
     clubSettingsCard(),
     h('div',{class:'card stack'},h('h2',{class:'h2'},'Invite friends'),
       h('ol',{class:'steps'},
-        h('li',null,h('b',null,'Share the page. '),'Open the Share menu on this page and add each friend by email as a Contributor. Leave public links off.'),
+        WEB?null:h('li',null,h('b',null,'Share the page. '),'Open the Share menu on this page and add each friend by email as a Contributor. Leave public links off.'),
         h('li',null,h('b',null,'They ask to join. '),'When they open it, they see the request screen with their name and a note.'),
         h('li',null,h('b',null,'You let them in. '),'Their request lands under Waiting at the door.'),
-        h('li',null,h('b',null,'To lock someone out fully, '),'press Remove here and also remove them in the Share menu.')))));
+        h('li',null,h('b',null,'To lock someone out, '),WEB?'press Remove here.':'press Remove here and also remove them in the Share menu.')))));
   return out;
 }
 function saveSettings(patch){
@@ -2713,3 +2716,4 @@ loadPrefs();navInit();
 boot();
 })();
 </script>
+</body></html>

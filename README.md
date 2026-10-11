@@ -1,8 +1,18 @@
 # Operation REE 2027
 
-A private study club web app for Electrical Engineering board exam review: flashcards (terms, formulas, problems) under EE, ESAS and MATH, timed problem solving, a daily 10, quiz battles, study insights, calendar, subjects checklist, chat, rankings, and owner-controlled membership.
+Private study club for the EE board exam: decks (terms / formulas / problems), quizzes, Daily 10, quiz battles, chat, calendar, rankings.
 
-- `index.html` is the whole app (single file, no build step).
-- `offline-template.html` is the template the app uses to export a deck as a standalone offline file.
+Two ways to run it from the same code:
 
-The app was built to run as a Claude Artifact, which provides the database, user identity, PDF-to-cards sampling and file downloads (`window.claude.use('db' | 'user' | 'sample' | 'downloads')`). Opened elsewhere (for example from GitHub Pages) it renders, but shared data, sign-in and quiz battles will not work without those capabilities.
+- **Claude artifact** – `app.html` is published as the artifact (uses Claude's built-in database and sign-in).
+- **Vercel + Supabase** – `index.html` (generated) + `claude-shim.js` + `config.js` + `supabase/schema.sql` + `api/sample.js`.
+
+Edit `app.html`, then run `python3 build.py` to regenerate `index.html`.
+
+## Supabase setup
+1. Create a free project at supabase.com.
+2. SQL Editor -> paste `supabase/schema.sql` (owner email is on the `insert into app_config` line) -> Run.
+3. Authentication -> Providers -> Email: turn **Confirm email OFF** (otherwise the free email limit blocks sign-ups).
+4. Project Settings -> API: copy the Project URL and the anon public key into `config.js`.
+5. Deploy on Vercel. **Sign up with the owner email first**, before sharing the link: that account becomes the owner.
+6. Optional PDF -> flashcards: add `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in Vercel env vars and set `AI_ENABLED: true` in `config.js`.
