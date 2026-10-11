@@ -1400,7 +1400,7 @@ function viewChat(){
 
 /* ---------- members (owner) ---------- */
 var WEB=!!window.__reeWeb;
-var INVITE_URL=WEB?(location.origin+location.pathname):'https://claude.ai/artifact/X9oWXSX2WbouEmAbkFpba3';
+var INVITE_URL=WEB?((window.REE_CONFIG&&window.REE_CONFIG.SITE_URL)||(location.origin+location.pathname)):'https://claude.ai/artifact/X9oWXSX2WbouEmAbkFpba3';
 function copyText(t,inp){
   var done=function(){toast('Link copied.')};
   try{
