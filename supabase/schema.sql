@@ -48,7 +48,7 @@ language plpgsql security definer set search_path = public as $$
 begin
   insert into profiles (id, name, is_owner)
   values (new.id, coalesce(new.raw_user_meta_data->>'name', ''),
-          lower(new.email) = (select lower(owner_email) from app_config limit 1));
+          coalesce(lower(new.email) = (select lower(owner_email) from app_config limit 1), false));
   return new;
 end $$;
 drop trigger if exists on_auth_user_created on auth.users;

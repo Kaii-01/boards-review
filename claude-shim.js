@@ -24,19 +24,20 @@ function css(){
 function authScreen(){
   return new Promise(function(done){
     css();
-    var mode='in',wrap=document.createElement('div');wrap.id='reeAuth';
+    var mode='guest',wrap=document.createElement('div');wrap.id='reeAuth';
     function draw(msg,isErr){
       wrap.innerHTML='';
       var b=document.createElement('div');b.className='box';
-      b.innerHTML='<div class="logo">R</div><h1>Operation REE 2027</h1><p>'+(mode==='in'?'Sign in to your club account.':'Create your account. The owner will let you in after you sign up.')+'</p>';
+      b.innerHTML='<div class="logo">R</div><h1>Operation REE 2027</h1><p>'+(mode==='guest'?'Type your name to ask to join. The owner will let you in.':mode==='in'?'Sign in with your email.':'Create an account with your email. The owner will let you in after you sign up.')+'</p>';
       var f=document.createElement('form');f.style.cssText='display:flex;flex-direction:column;gap:12px';
       function fld(l,t,n,ac){var d=document.createElement('div');d.innerHTML='<label>'+l+'</label>';var i=document.createElement('input');i.type=t;i.name=n;i.autocomplete=ac;i.required=true;d.appendChild(i);f.appendChild(d);return i}
-      var nameI=mode==='up'?fld('Your name (ENGR. is added for you)','text','name','name'):null;
-      var em=fld('Email','email','email','email'),pw=fld('Password (6+ characters)','password','pw',mode==='in'?'current-password':'new-password');
+      var nameI=(mode==='up'||mode==='guest')?fld('Your name (ENGR. is added for you)','text','name','name'):null;
+      var em=mode==='guest'?null:fld('Email','email','email','email'),pw=mode==='guest'?null:fld('Password (6+ characters)','password','pw',mode==='in'?'current-password':'new-password');
       var er=document.createElement('div');er.className='err';er.textContent=msg||'';if(!isErr&&msg)er.style.color='#c8f53a';f.appendChild(er);
-      var go=document.createElement('button');go.type='submit';go.textContent=mode==='in'?'Sign in':'Create account';f.appendChild(go);
+      var go=document.createElement('button');go.type='submit';go.textContent=mode==='guest'?'Ask to join':mode==='in'?'Sign in':'Create account';f.appendChild(go);
       f.onsubmit=function(ev){ev.preventDefault();go.disabled=true;er.textContent='';
-        var p=mode==='in'?sb.auth.signInWithPassword({email:em.value.trim(),password:pw.value})
+        var nm0=(nameI?nameI.value:'').trim().replace(/^engr\.?\s*/i,'');
+        var p=mode==='guest'?sb.auth.signInAnonymously({options:{data:{name:nm0}}}):mode==='in'?sb.auth.signInWithPassword({email:em.value.trim(),password:pw.value})
           :sb.auth.signUp({email:em.value.trim(),password:pw.value,options:{data:{name:(nameI.value||'').trim().replace(/^engr\.?\s*/i,'')}}});
         p.then(function(r){
           if(r.error){go.disabled=false;er.textContent=r.error.message;return}
@@ -45,8 +46,9 @@ function authScreen(){
         }).catch(function(e){go.disabled=false;er.textContent=String(e&&e.message||e)});
       };
       b.appendChild(f);
-      var alt=document.createElement('button');alt.type='button';alt.className='alt';alt.textContent=mode==='in'?'New here? Create an account':'I already have an account';
-      alt.onclick=function(){mode=mode==='in'?'up':'in';draw()};b.appendChild(alt);wrap.appendChild(b);
+      var alt=document.createElement('button');alt.type='button';alt.className='alt';alt.textContent=mode==='guest'?'I already have an account (email)':'Back to joining with just a name';
+      alt.onclick=function(){mode=mode==='guest'?'in':'guest';draw()};b.appendChild(alt);
+      if(mode==='in'||mode==='up'){var alt2=document.createElement('button');alt2.type='button';alt2.className='alt';alt2.textContent=mode==='in'?'Create an account with email':'I already have an account';alt2.onclick=function(){mode=mode==='in'?'up':'in';draw()};b.appendChild(alt2)}wrap.appendChild(b);
     }
     draw();document.body.appendChild(wrap);
   });
@@ -63,7 +65,8 @@ async function start(){
     if(!session)session=await authScreen();
     var p=await sb.from('profiles').select('name,is_owner').eq('id',session.user.id).maybeSingle();
     profile=(p&&p.data)||{name:(session.user.user_metadata&&session.user.user_metadata.name)||'',is_owner:false};
-    window.__reeAuth={email:session.user.email,signOut:function(){return sb.auth.signOut().then(function(){location.reload()})}};
+    window.__reeAuth={email:session.user.email||'',anon:!!session.user.is_anonymous,signOut:function(){return sb.auth.signOut().then(function(){location.reload()})},
+      saveAccount:function(email,pw){return sb.auth.updateUser({email:email,password:pw}).then(function(r){if(r.error)throw r.error;return true})}};
     openChannel();
     readyRes(true);
   }catch(e){

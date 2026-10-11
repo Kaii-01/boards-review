@@ -904,7 +904,15 @@ function viewSettings(){
     }))),
     h('label',{class:'row',style:'font-size:15px'},h('input',{type:'checkbox',id:'pconf',checked:PREFS.confetti?true:null,onchange:function(ev){PREFS.confetti=ev.target.checked;savePrefs();if(PREFS.confetti)confetti()}}),'Confetti when I do well')));
   if(S.isOwner&&S.db)out.push(clubSettingsCard());
-  if(window.__reeAuth)out.push(h('div',{class:'card stack'},h('h2',{class:'h2'},'Account'),h('p',{class:'muted',style:'margin:0'},'Signed in as '+window.__reeAuth.email),h('div',null,h('button',{class:'btn',type:'button',onclick:function(){window.__reeAuth.signOut()}},'Sign out'))));
+  if(window.__reeAuth){
+    var A=window.__reeAuth,em1=h('input',{type:'email',placeholder:'Email',autocomplete:'email','aria-label':'Email'}),pw1=h('input',{type:'password',placeholder:'Password (6+ characters)',autocomplete:'new-password','aria-label':'Password'});
+    out.push(h('div',{class:'card stack'},h('h2',{class:'h2'},'Account'),
+      A.anon?h('p',{class:'muted',style:'margin:0'},'You joined with just a name, so your account only lives on this device. If you clear your browser data or switch phones you would lose it. Add an email and password to keep it.'):h('p',{class:'muted',style:'margin:0'},'Signed in as '+A.email),
+      A.anon?h('div',{class:'field'},em1,pw1,h('div',null,h('button',{class:'btn primary',type:'button',onclick:function(){
+        if(!em1.value.trim()||pw1.value.length<6){toast('Enter an email and a password of 6+ characters.');return}
+        A.saveAccount(em1.value.trim(),pw1.value).then(function(){toast('Saved. You can now sign in from any device.');A.anon=false;render()}).catch(function(e){toast(e&&e.message?e.message:'Could not save.')})}},'Save my account'))):null,
+      h('div',null,h('button',{class:'btn',type:'button',onclick:function(){A.signOut()}},'Sign out'))));
+  }
   out.push(h('div',{class:'card stack'},h('h2',{class:'h2'},'Use it like an app on your phone'),
     h('p',{class:'muted',style:'margin:0'},'This is a web app, so there is nothing to download from a store. Add it to your home screen and it opens full screen like an app.'),
     h('ol',{style:'margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;line-height:1.45'},
